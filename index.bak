@@ -1,0 +1,94 @@
+const Discord = require('discord.js');
+const {prefix, token} = require('./config.json');
+const apis = require('./apicalls.js');
+
+const client = new Discord.Client();
+
+client.once('ready', () => {
+  console.log('Ready!')
+});
+
+// testing ground for initial message command
+client.on('message', async (message) => {
+  if (!message.content.startsWith(`${prefix}`) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).split(/ +/);
+  const cmd = args.shift().toLowerCase();
+  console.log(cmd)
+
+  if (cmd === `help`){
+    const collection = message.member.roles.cache;
+    const roles = [];
+    collection.each(role => roles.push(role.name))
+    
+    if (roles.includes('admins')){
+      console.log("Is admin");
+      message.channel.send(`
+      Command List: 
+      1. ${cmd}\t\t"help" command shows this menu\n
+      2. joke\t\t"joke" command will tell you a joke if you want to hear one\n
+      3. show\t\t"show" command will let you know a variety of info for your user\n
+      4. report\t\t"report" command is hear to report ill mannered behavior to the admins\n
+      5. create\t\t"create" command should only be visible for admins to use to create channels, permissions, etc.`);
+
+    } else {
+      message.channel.send(`
+      Command List: 
+      1. ${cmd}\t\t"help" command shows this menu\n
+      2. joke\t\t"joke" command will tell you a joke if you want to hear one\n
+      3. show\t\t"show" command will let you know a variety of info for your user\n
+      4. report\t\t"report" command is hear to report ill mannered behavior to the admins\n`)
+    }
+
+  };
+
+  if (cmd === 'joke'){
+    if (!args.length || args[0] === 'help') {
+      return message.channel.send(`"joke" - Joke Command Usage: This command will tell you a joke!\n\nargument options:\n1. jotd\t\tJoke of the Day\n2. chuck\tChuck Norris jokes\n3. dad\t\tDad jokes\n4. help\t\tShow this help section`)
+    }
+        
+    if (args[0] === "jod"){
+      const data = await apis.getData("https://sv443.net/jokeapi/v2/joke/Any?blacklistFlags=religious,political,racist,sexist");
+      if (data.type === "single"){
+        message.channel.send(`Here is your joke ${message.author}\n${data.joke}`);            
+      } else {
+        message.channel.send(`Here is your joke ${message.author}\n${data.setup}`);            
+        setTimeout(()=>{
+          message.channel.send(`${data.delivery}`);            
+          }, 2000);
+      }
+    }
+
+    if (args[0] === "chuck") {
+      const data = await apis.getData("https://api.chucknorris.io/jokes/random");
+      message.channel.send(`Here is your joke ${message.author}\n${data.value}`);            
+    }
+
+    if (args[0] === "dad") {
+      const data = await apis.getData("https://icanhazdadjoke.com/slack");
+      message.channel.send(`Here is your joke ${message.author}\n${data.attachments[0].text}`)
+    }
+
+  }
+
+
+
+    
+
+    if (message.content.startsWith(`${prefix}ping`)){
+        message.channel.send("pong MF!!!")
+    }
+});
+
+// Welcome members to the server
+client.on('guildMemberAdd', member => {
+    const channel = member.guild.channels.cache.find(ch => ch.name === 'welcome');
+
+    if (!channel) return;
+
+    channel.send(`Welcome to the server, ${member}`);
+});
+
+// login to the server
+client.login(token);
+
